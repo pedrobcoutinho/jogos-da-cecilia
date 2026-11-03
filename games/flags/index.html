@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7651b7">
+  <title>Países e Bandeiras · Jogos da Cecília</title>
+  <base href="../../">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="pwa.css">
+  <script src="pwa.js" defer></script>
+  <script src="audio.js" defer></script>
+</head>
+<body>
+  <main class="game">
+    <a href="index.html" style="display:inline-block;margin-bottom:18px;padding:14px 22px;border-radius:18px;background:#fff;color:#19324d;font-weight:bold;text-decoration:none">🏠 Jogos da Cecília</a>
+    <header><div class="eyebrow">🌎 DESCOBRINDO O MUNDO</div><h1>Que país é esse?</h1></header>
+    <section id="setup" class="card">
+      <h2>Vamos preparar a brincadeira?</h2>
+      <p>Um adulto escolhe o jeito de responder. Depois é só brincar!</p>
+      <fieldset>
+        <legend>Como vamos responder?</legend>
+        <label class="mode"><input type="radio" name="mode" value="voice" checked><span>🎙️ Falando<small>Ela responde em voz alta. O jogo escuta sozinho.</small></span></label>
+        <label class="mode"><input type="radio" name="mode" value="buttons"><span>👆 Tocando nos botões<small>O jogo lê as opções. Não precisa de microfone.</small></span></label>
+      </fieldset>
+      <label class="extra"><input id="capitals" type="checkbox"> Incluir capitais também</label>
+      <p class="hint">50 países para descobrir! Para começar aos 4 anos, experimente só as bandeiras. Cada partida vem em uma ordem diferente.</p>
+      <p class="hint">Ela pode dizer “não sei”, “me ajuda” ou “repete” durante a brincadeira.</p>
+      <p class="hint">Combine com ela: 👂 amarelo é para escutar; 🎙️ verde é a vez de falar!</p>
+      <p class="hint">Sem internet, escolha os botões. A voz depende do navegador e das vozes instaladas no aparelho.</p>
+      <p id="setup-message" class="feedback" role="status"></p>
+      <button id="start" class="start">▶ Começar a brincar</button>
+      <button id="cancel-start" class="secondary" hidden>Cancelar</button>
+    </section>
+    <section id="play" hidden>
+      <p id="progress"></p>
+      <div class="card">
+        <div id="turn-cue" class="turn-cue speaking" role="status" aria-live="polite">
+          <span id="turn-icon" class="turn-icon" aria-hidden="true">👂</span>
+          <strong id="turn-label">Agora escute…</strong>
+        </div>
+        <img id="flag" class="flag" alt="Bandeira do país" width="520" height="290">
+        <h2 id="question"></h2>
+        <p id="feedback" class="feedback" role="status"></p>
+        <div id="answers" class="answers"></div>
+        <button id="repeat" class="secondary">🔊 Ouvir de novo</button>
+      </div>
+      <footer>
+        <button id="pause" class="secondary">⏸ Pausar</button>
+        <button id="new-game" class="secondary">🏠 Nova brincadeira</button>
+      </footer>
+    </section>
+    <p id="pwa-status" class="pwa-status" role="status">Preparando os jogos para brincar sem internet…</p>
+  </main>
+  <details class="diagnostics">
+    <summary>Ajuda para o adulto · versão 11</summary>
+    <p>Se a voz parar, este registro mostra em que etapa o jogo ficou. Ele não grava áudio nem guarda o que foi falado. Copie o texto para relatar um problema.</p>
+    <pre id="voice-diagnostics"></pre>
+  </details>
+  <script src="app.js"></script>
+</body>
+</html>

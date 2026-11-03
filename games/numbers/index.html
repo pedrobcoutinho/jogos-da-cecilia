@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7651b7"><title>Números · Jogos da Cecília</title>
+  <link rel="stylesheet" href="../../platform.css">
+  <link rel="manifest" href="../../manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="../../pwa.css">
+  <script src="../../pwa.js" defer></script>
+  <script src="../../audio.js" defer></script>
+  <script src="core.js" defer></script><script src="numbers.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar" aria-label="Navegação">
+      <a class="back" href="../../index.html">🏠 Jogos da Cecília</a>
+      <span class="stars" id="stars" aria-label="Estrelas conquistadas">⭐ 0</span>
+    </nav>
+    <section id="menu">
+      <header class="page-title"><p class="eyebrow">UMA DESCOBERTA DE CADA VEZ</p><h1>Vamos <span>contar?</span></h1><p>Escolha uma brincadeira!</p></header>
+      <div class="mode-grid">
+        <button class="mode-card" data-mode="learn"><span aria-hidden="true">🔢</span><strong>Aprender números</strong><small>Toque, escute e conte as estrelas.</small></button>
+        <button class="mode-card" data-mode="recognize"><span aria-hidden="true">🔎</span><strong>Encontrar números</strong><small>Escute o número e encontre!</small></button>
+        <button class="mode-card" data-mode="math"><span aria-hidden="true">🍎</span><strong>Continhas</strong><small>Junte e tire maçãs. Vamos contar!</small></button>
+      </div>
+      <details class="adult"><summary>Para o adulto</summary><p>A brincadeira começa com números de 0 a 10 e continhas até 5. A faixa pode ser ampliada nos controles de cada modo. Nas continhas, cinco acertos seguidos na primeira tentativa avançam para 10 e depois 20. As estrelas e os níveis ficam salvos neste navegador.</p><p>Erros permitem tentar novamente. Este jogo usa só botões e narração, sem microfone. Ao trocar de aba, a brincadeira pausa.</p><p>Copie o progresso para outro aparelho ou guarde um backup. A importação pede confirmação antes de substituir as estrelas e os níveis.</p>
+<div class="backup-actions"><button id="backup-export" class="soft">Exportar progresso</button><label for="backup-file">Importar backup (.json)<input id="backup-file" type="file" accept=".json,application/json"></label></div>
+<div id="backup-preview" class="backup-preview" hidden><p id="backup-summary"></p><button id="backup-restore" class="soft">Restaurar este progresso</button><button id="backup-cancel" class="soft">Cancelar</button></div>
+<p id="backup-message" class="backup-message" role="status"></p></details>
+    </section>
+    <section id="activity" hidden>
+      <div class="topbar"><button id="back-menu" class="soft">← Brincadeiras</button><button id="pause" class="soft">⏸ Pausar</button></div>
+      <div class="settings"><label for="range">Vamos brincar até:</label><select id="range" aria-label="Número máximo"></select></div>
+      <section class="play-panel" aria-labelledby="question">
+        <h2 id="question" tabindex="-1"></h2>
+        <div id="content"></div>
+        <div id="celebration" class="celebration" aria-hidden="true"></div>
+        <p id="feedback" class="feedback" role="status"></p>
+        <div id="choices" class="choices" aria-label="Respostas"></div>
+        <div id="learn-grid" class="number-grid" aria-label="Escolha um número"></div>
+        <p id="progress-note" class="progress-note"></p>
+        <div class="play-actions"><button id="repeat" class="soft">🔊 Ouvir de novo</button></div>
+      </section>
+    </section>
+    <section id="paused" class="pause-card" hidden><h2>Uma pausa para descansar 💛</h2><p>Quando quiser, vamos continuar!</p><button id="resume" class="primary">▶ Continuar</button><button id="paused-menu" class="soft">← Brincadeiras</button></section>
+    <p id="storage-note" class="storage-note" hidden>Seu navegador não está salvando o progresso. Você pode continuar brincando normalmente.</p>
+    <p id="pwa-status" class="pwa-status" role="status">Preparando os jogos para brincar sem internet…</p>
+  </main>
+</body>
+</html>

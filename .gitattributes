@@ -1,0 +1,2 @@
+# Offline hashes refer to exact bytes. Keep them unchanged on Windows and Pages.
+* -text

@@ -1,0 +1,15 @@
+/* Shared installed-app layout; applied after each game's existing stylesheet. */
+html{min-height:100%;-webkit-text-size-adjust:100%}
+body{min-height:100vh;min-height:100dvh;grid-template-columns:minmax(0,1fr);padding-top:env(safe-area-inset-top,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)}
+button,a,input,select{touch-action:manipulation}
+input,select{font-size:max(16px,1rem)}
+.pwa-status{max-width:780px;margin:22px auto;padding:0 16px;font-size:.9rem;line-height:1.5;color:#617381;text-align:center}
+.backup-actions{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+.backup-actions label{display:grid;gap:8px;max-width:100%;min-width:0}.backup-actions input{max-width:100%;min-width:0}
+.backup-preview{padding:14px;background:#f3edf9;border-radius:16px;margin:12px 0}
+.backup-message{white-space:pre-line}
+.game-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:830px;margin:auto}
+.game,.diagnostics{max-width:100%;min-width:0}
+@media(max-width:700px){.game-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}}
+@media(max-width:360px){.game-tile{padding-left:100px}.tile-art{left:12px;font-size:58px}.tile-art.digits{left:8px;font-size:30px}}
+@media(display-mode:standalone){.shell{padding-top:24px}}
