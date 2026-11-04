@@ -19,9 +19,14 @@
   <main class="game">
     <a href="index.html" style="display:inline-block;margin-bottom:18px;padding:14px 22px;border-radius:18px;background:#fff;color:#19324d;font-weight:bold;text-decoration:none">🏠 Jogos da Cecília</a>
     <header><div class="eyebrow">🌎 DESCOBRINDO O MUNDO</div><h1>Que país é esse?</h1></header>
+    <p id="audio-notice" class="audio-notice" role="status" hidden></p>
     <section id="setup" class="card">
       <h2>Vamos preparar a brincadeira?</h2>
       <p>Um adulto escolhe o jeito de responder. Depois é só brincar!</p>
+      <div class="audio-controls">
+        <button id="activate-sound" class="soft secondary" type="button">🔊 Ativar som</button>
+        <p id="audio-test-status" role="status">No iPhone, toque para testar a voz antes de brincar.</p>
+      </div>
       <fieldset>
         <legend>Como vamos responder?</legend>
         <label class="mode"><input type="radio" name="mode" value="voice" checked><span>🎙️ Falando<small>Ela responde em voz alta. O jogo escuta sozinho.</small></span></label>
@@ -60,6 +65,7 @@
     <summary>Ajuda para o adulto · versão 11</summary>
     <p>Se a voz parar, este registro mostra em que etapa o jogo ficou. Ele não grava áudio nem guarda o que foi falado. Copie o texto para relatar um problema.</p>
     <pre id="voice-diagnostics"></pre>
+    <p>Diagnóstico de som · áudio 2. Compare no Safari e no aplicativo instalado.</p><pre id="audio-diagnostics" class="audio-diagnostics"></pre>
   </details>
   <script src="app.js"></script>
 </body>

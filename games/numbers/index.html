@@ -19,8 +19,13 @@
       <a class="back" href="../../index.html">🏠 Jogos da Cecília</a>
       <span class="stars" id="stars" aria-label="Estrelas conquistadas">⭐ 0</span>
     </nav>
+    <p id="audio-notice" class="audio-notice" role="status" hidden></p>
     <section id="menu">
       <header class="page-title"><p class="eyebrow">UMA DESCOBERTA DE CADA VEZ</p><h1>Vamos <span>contar?</span></h1><p>Escolha uma brincadeira!</p></header>
+      <div class="audio-controls">
+        <button id="activate-sound" class="soft secondary" type="button">🔊 Ativar som</button>
+        <p id="audio-test-status" role="status">No iPhone, toque para testar a voz antes de brincar.</p>
+      </div>
       <div class="mode-grid">
         <button class="mode-card" data-mode="learn"><span aria-hidden="true">🔢</span><strong>Aprender números</strong><small>Toque, escute e conte as estrelas.</small></button>
         <button class="mode-card" data-mode="recognize"><span aria-hidden="true">🔎</span><strong>Encontrar números</strong><small>Escute o número e encontre!</small></button>
@@ -29,7 +34,7 @@
       <details class="adult"><summary>Para o adulto</summary><p>A brincadeira começa com números de 0 a 10 e continhas até 5. A faixa pode ser ampliada nos controles de cada modo. Nas continhas, cinco acertos seguidos na primeira tentativa avançam para 10 e depois 20. As estrelas e os níveis ficam salvos neste navegador.</p><p>Erros permitem tentar novamente. Este jogo usa só botões e narração, sem microfone. Ao trocar de aba, a brincadeira pausa.</p><p>Copie o progresso para outro aparelho ou guarde um backup. A importação pede confirmação antes de substituir as estrelas e os níveis.</p>
 <div class="backup-actions"><button id="backup-export" class="soft">Exportar progresso</button><label for="backup-file">Importar backup (.json)<input id="backup-file" type="file" accept=".json,application/json"></label></div>
 <div id="backup-preview" class="backup-preview" hidden><p id="backup-summary"></p><button id="backup-restore" class="soft">Restaurar este progresso</button><button id="backup-cancel" class="soft">Cancelar</button></div>
-<p id="backup-message" class="backup-message" role="status"></p></details>
+<p id="backup-message" class="backup-message" role="status"></p><p>Diagnóstico de som · áudio 2. Compare este registro no Safari e no aplicativo instalado. Ele não contém gravações.</p><pre id="audio-diagnostics" class="audio-diagnostics"></pre></details>
     </section>
     <section id="activity" hidden>
       <div class="topbar"><button id="back-menu" class="soft">← Brincadeiras</button><button id="pause" class="soft">⏸ Pausar</button></div>

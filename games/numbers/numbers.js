@@ -16,7 +16,8 @@
     token++;
     clearTimeout(nextTimer);clearTimeout(speechWatch);
     if(speech){speech.onend=speech.onerror=speech.onstart=null;speech=null}
-    window.speechSynthesis?.cancel();
+    if(window.CeciliaAudio)window.CeciliaAudio.cancel();
+    else window.speechSynthesis?.cancel();
   }
   function say(text,done=()=>{}){
     cancel();
@@ -24,11 +25,11 @@
     if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){done();return}
     const u=new SpeechSynthesisUtterance(text);
     speech=u;u.lang='pt-BR';u.rate=1.12;u.pitch=1.08;
-    window.CeciliaAudio?.prepare(u);
     let started=false;const began=Date.now();
     const finish=()=>{
       if(version!==token||speech!==u)return;
-      clearTimeout(speechWatch);u.onend=u.onerror=u.onstart=null;speech=null;done();
+      clearTimeout(speechWatch);window.CeciliaAudio?.finished(u);
+      u.onend=u.onerror=u.onstart=null;speech=null;done();
     };
     u.onstart=()=>{started=true};
     u.onend=finish;u.onerror=finish;
@@ -36,16 +37,19 @@
       if(version!==token||speech!==u)return;
       const elapsed=Date.now()-began;
       if((!window.speechSynthesis.speaking&&(started||elapsed>8000))||elapsed>Math.max(30000,text.length*180+10000)){
-        u.onend=u.onerror=null;window.speechSynthesis.cancel();finish();
+        if(!started||window.speechSynthesis.speaking)window.CeciliaAudio?.timeout(u);
+        u.onend=u.onerror=null;
+        if(window.CeciliaAudio)window.CeciliaAudio.cancel();else window.speechSynthesis.cancel();
+        finish();
       }else speechWatch=setTimeout(watch,1000);
     }
     speechWatch=setTimeout(watch,1000);
-    try{window.speechSynthesis.speak(u)}catch{finish()}
+    try{if(window.CeciliaAudio)window.CeciliaAudio.play(u);else window.speechSynthesis.speak(u)}catch{finish()}
   }
   function max(){return progress[mode==='math'?'mathMax':mode==='learn'?'learnMax':'recognizeMax']}
   function setPhase(value){
     phase=value;
-    $('repeat').disabled=['speaking','feedback'].includes(value);
+    $('repeat').disabled=['paused','feedback'].includes(value);
     document.querySelectorAll('#choices button').forEach(b=>b.disabled=value!=='answer'||b.dataset.tried==='yes');
   }
   function feedback(text,success=false){
@@ -93,7 +97,7 @@
   function renderQuestion(){
     $('learn-grid').hidden=true;$('learn-grid').innerHTML='';
     $('celebration').textContent='';$('celebration').className='celebration';
-    $('question').textContent=mode==='recognize'?'Onde está o número '+question.answer+'?':'Vamos contar as maçãs!';
+    $('question').textContent=mode==='recognize'?'Onde está o '+C.names[question.answer].toLocaleUpperCase('pt-BR')+'?':'Vamos contar as maçãs!';
     if(mode==='recognize'){
       $('content').innerHTML='<div class="number-display" aria-hidden="true">🔎</div>';
     }else{
@@ -124,11 +128,14 @@
       attempts++;
       if(mode==='math'){progress.streak=0;persist();note()}
       button.dataset.tried='yes';button.className='choice wrong';
-      feedback(mode==='math'?'Ainda não! Conte as maçãs e tente de novo.':'Ainda não! Vamos procurar o número '+question.answer+'.');
+      feedback(mode==='math'?'Ainda não! Conte as maçãs e tente de novo.':'Ainda não! Vamos procurar o '+C.names[question.answer].toLocaleUpperCase('pt-BR')+'.');
       say(mode==='math'?'Ainda não. Conte as maçãs e tente de novo.':'Ainda não. Procure o número '+C.names[question.answer]+'.',()=>setPhase('answer'));
       return;
     }
     button.className='choice correct';
+    if(mode==='recognize'){
+      $('content').innerHTML='<div class="number-display">'+question.answer+'</div><p class="number-name">'+C.names[question.answer]+'</p>';
+    }
     const earned=C.reward(progress,mode,attempts===0);progress=earned.progress;persist();note();
     $('celebration').textContent='⭐ ⭐ ⭐';$('celebration').className='celebration pop';
     const message='Parabéns! Você acertou!'+(earned.promoted?' Agora vamos brincar até '+max()+'!':'');
@@ -166,7 +173,7 @@
     if(mode==='math')progress.streak=0;
     persist();openMode(mode);
   };
-  $('repeat').onclick=()=>{if(mode==='learn')showLearning(selected);else if(phase==='answer')ask()};
+  $('repeat').onclick=()=>{if(mode==='learn')showLearning(selected);else if(['answer','speaking'].includes(phase))ask()};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
   window.addEventListener('pagehide',cancel);
   let pendingImport=null,importRevision=0;

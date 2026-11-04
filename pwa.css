@@ -8,6 +8,11 @@ input,select{font-size:max(16px,1rem)}
 .backup-actions label{display:grid;gap:8px;max-width:100%;min-width:0}.backup-actions input{max-width:100%;min-width:0}
 .backup-preview{padding:14px;background:#f3edf9;border-radius:16px;margin:12px 0}
 .backup-message{white-space:pre-line}
+.audio-controls{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:20px 0;color:#617381}
+.audio-controls p{margin:0;max-width:380px;line-height:1.5}
+.audio-controls button{flex-shrink:0;min-height:52px}
+.audio-notice{padding:14px;border-radius:16px;background:#fff0bf;color:#604500;line-height:1.5}
+.audio-diagnostics{white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto;font-size:.75rem;line-height:1.5;text-align:left}
 .game-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:830px;margin:auto}
 .game,.diagnostics{max-width:100%;min-width:0}
 @media(max-width:700px){.game-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}}

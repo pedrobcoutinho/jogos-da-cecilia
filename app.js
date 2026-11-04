@@ -104,7 +104,8 @@ function clearRound(){
   heard='';
   speechActive=false;transcriptFinal=false;
   if(utterance){utterance.onend=utterance.onerror=null;utterance=null}
-  window.speechSynthesis?.cancel();
+  if(window.CeciliaAudio)window.CeciliaAudio.cancel();
+  else window.speechSynthesis?.cancel();
 }
 function stopVoice(){
   voiceReady=false;
@@ -137,13 +138,13 @@ function speak(text,done){
   const speech=new SpeechSynthesisUtterance(text);
   utterance=speech;
   speech.lang='pt-BR';speech.rate=1.18;speech.pitch=1.08;
-  window.CeciliaAudio?.prepare(speech);
   const requestedAt=Date.now();
   let started=false;
   const finish=()=>{
     if(version!==revision||utterance!==speech)return;
     traceVoice('narracao-concluida');
     clearTimeout(speechTimer);
+    window.CeciliaAudio?.finished(speech);
     speech.onstart=speech.onend=speech.onerror=null;
     utterance=null;done();
   };
@@ -154,7 +155,8 @@ function speak(text,done){
     const elapsed=Date.now()-requestedAt;
     if((!window.speechSynthesis.speaking&&(started||elapsed>=8000))||elapsed>=Math.max(30000,text.length*180+10000)){
       speech.onstart=speech.onend=speech.onerror=null;
-      window.speechSynthesis.cancel();
+      if(!started||window.speechSynthesis.speaking)window.CeciliaAudio?.timeout(speech);
+      if(window.CeciliaAudio)window.CeciliaAudio.cancel();else window.speechSynthesis.cancel();
       finish();
       return;
     }
@@ -164,7 +166,7 @@ function speak(text,done){
   speech.onend=finish;
   speech.onerror=finish;
   speechTimer=setTimeout(watch,1000);
-  try{window.speechSynthesis.speak(speech)}catch{finish()}
+  try{if(window.CeciliaAudio)window.CeciliaAudio.play(speech);else window.speechSynthesis.speak(speech)}catch{finish()}
 }
 function current(){return countries[index]}
 function render(){
@@ -189,7 +191,7 @@ function ask(intro=''){
   cue('speaking','👂','Agora escute…');
   $('feedback').className='feedback';
   $('feedback').textContent='🔊 Escute…';
-  $('repeat').disabled=true;
+  $('repeat').disabled=false;
   document.querySelectorAll('[data-answer]').forEach(b=>b.disabled=true);
   let question=intro+ $('question').textContent;
   if(mode==='buttons'){
@@ -280,6 +282,11 @@ function start(){
   }
   if(mode==='voice'&&!Recognition){
     $('setup-message').textContent='Abra no Google Chrome para brincar falando, ou escolha os botões.';
+    return;
+  }
+  if(mode==='voice'&&window.CeciliaAudio?.requiresActivation()){
+    $('setup-message').textContent='No iPhone, toque primeiro em “Ativar som”. Depois, toque em Começar a brincar.';
+    $('activate-sound').focus();
     return;
   }
   clearRound();stopVoice();
