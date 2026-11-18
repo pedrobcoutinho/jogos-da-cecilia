@@ -59,6 +59,11 @@ function waitingCue(){
   else cue('speaking','⏳','Só um instante…');
 }
 const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+function isAppleMobile(){
+  const device=window.navigator;
+  return /iPad|iPhone|iPod/.test(device?.userAgent||'')||
+    (device?.platform==='MacIntel'&&device?.maxTouchPoints>1);
+}
 const clean=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const answerAliases={
   'Washington, D.C.':['Washington','Washington DC'],
@@ -320,8 +325,11 @@ function start(){
   $('start').disabled=true;
   $('start').textContent='Preparando…';
   $('cancel-start').hidden=false;
-  $('setup-message').textContent=mode==='voice'?'Permita o microfone no Chrome. Escolha permitir durante as visitas, em vez de somente desta vez.':'';
-  if(mode==='voice')connectVoice(true);
+  $('setup-message').textContent=mode==='voice'?'Permita o microfone quando o navegador pedir.':'';
+  // iOS can lose capture after its first recognition session, even when it
+  // reports audiostart. Do not spend that first session on a permission probe.
+  // The first microphone request now listens to the actual question.
+  if(mode==='voice'&&!isAppleMobile())connectVoice(true);
   else beginRound();
 }
 function connectVoice(initial=false){
@@ -333,6 +341,8 @@ function connectVoice(initial=false){
   }
   const r=new Recognition();
   recognition=r;
+  const requestedAt=Date.now();
+  traceVoice('iniciando-reconhecimento',`inicial=${initial}; ios=${isAppleMobile()}; gesto=${window.navigator?.userActivation?.isActive??'indisponível'}`);
   r.lang='pt-BR';r.continuous=false;r.interimResults=true;
   const active=()=>recognition===r;
   let audioEnded=false;
@@ -384,7 +394,7 @@ function connectVoice(initial=false){
   };
   r.onstart=()=>{
     if(!active())return;
-    traceVoice('servico-de-voz-iniciado');
+    traceVoice('servico-de-voz-iniciado',`espera=${Date.now()-requestedAt}ms`);
     // onstart alone does not confirm microphone capture. Wait for audiostart,
     // sound/speech detection or an actual result before displaying green.
   };
@@ -419,6 +429,12 @@ function connectVoice(initial=false){
   r.onerror=e=>{
     if(!active())return;
     traceVoice('erro-microfone',e.error);
+    if(e.error==='audio-capture'&&phase==='waiting'){
+      voiceReady=false;
+      if(heard){speechActive=false;cue('speaking','⏳','Entendendo sua resposta…');scheduleAnswer(250)}
+      else continueByTouch('O microfone parou de funcionar agora. Vamos continuar tocando nos botões. ');
+      return;
+    }
     if(['no-speech','network','aborted'].includes(e.error)&&phase==='waiting'){
       voiceReady=false;
       cue('speaking','⏳','Só um instante…');
@@ -426,8 +442,8 @@ function connectVoice(initial=false){
       return;
     }
     const message=['not-allowed','service-not-allowed'].includes(e.error)
-      ?'O microfone não foi autorizado. Um adulto precisa permitir o microfone nas configurações deste site no Chrome antes de começar.'
-      :e.error==='audio-capture'?'Não encontrei o microfone. Confira se está conectado antes de começar.'
+      ?'O microfone não foi autorizado. Um adulto precisa permitir o microfone nas configurações deste site no navegador antes de começar.'
+      :e.error==='audio-capture'?'O navegador não conseguiu captar o microfone. Feche outros aplicativos que usam áudio e tente novamente, ou escolha os botões.'
       :'A conexão de voz parou. Confira a internet e tente começar novamente, ou escolha brincar com os botões.';
     setup(message);
   };
@@ -451,6 +467,11 @@ function connectVoice(initial=false){
   },initial?30000:8000);
   try{r.start()}catch{setup('Não consegui iniciar a voz. Confira o microfone e tente novamente.')}
 }
+function continueByTouch(message){
+  stopVoice();mode='buttons';phase='ready';render();
+  traceVoice('continuando-por-toque');
+  ask(message);
+}
 function watchListening(delay=20000){
   clearTimeout(listeningTimer);
   if(mode!=='voice'||phase!=='waiting'||heard)return;
@@ -459,9 +480,7 @@ function watchListening(delay=20000){
     if(version!==revision||phase!=='waiting'||heard)return;
     traceVoice('sem-resposta-do-reconhecimento');
     if(listeningRetries>=1){
-      stopVoice();mode='buttons';phase='ready';render();
-      traceVoice('continuando-por-toque');
-      ask('Não consegui ouvir agora. Vamos continuar tocando nos botões. ');
+      continueByTouch('Não consegui ouvir agora. Vamos continuar tocando nos botões. ');
       return;
     }
     listeningRetries++;
@@ -478,7 +497,7 @@ function pause(){
   if(phase==='paused'){
     phase='ready';
     $('pause').textContent='⏸ Pausar';
-    if(mode==='voice'){
+    if(mode==='voice'&&!isAppleMobile()){
       phase='starting';
       cue('speaking','⏳','Só um instante…');
       connectVoice(true);
