@@ -1,7 +1,8 @@
 const countriesAll=[
 ['Brasil','Brasília','br'],['Estados Unidos','Washington, D.C.','us'],['China','Pequim','cn'],['Índia','Nova Délhi','in'],['Rússia','Moscou','ru'],['Canadá','Ottawa','ca'],['Austrália','Canberra','au'],['Argentina','Buenos Aires','ar'],['México','Cidade do México','mx'],['Indonésia','Jacarta','id'],['Turquia','Ancara','tr'],['Arábia Saudita','Riad','sa'],['África do Sul','Pretória','za'],['Egito','Cairo','eg'],['Nigéria','Abuja','ng'],['Alemanha','Berlim','de'],['França','Paris','fr'],['Reino Unido','Londres','gb'],['Itália','Roma','it'],['Espanha','Madri','es'],['Ucrânia','Kiev','ua'],['Polônia','Varsóvia','pl'],['Romênia','Bucareste','ro'],['Países Baixos','Amsterdã','nl'],['Grécia','Atenas','gr'],['Portugal','Lisboa','pt'],['Suécia','Estocolmo','se'],['Noruega','Oslo','no'],['Finlândia','Helsinque','fi'],['Dinamarca','Copenhague','dk'],['Suíça','Berna','ch'],['Áustria','Viena','at'],['Bélgica','Bruxelas','be'],['Irlanda','Dublin','ie'],['República Tcheca','Praga','cz'],['Hungria','Budapeste','hu'],['Israel','Jerusalém','il'],['Emirados Árabes Unidos','Abu Dhabi','ae'],['Irã','Teerã','ir'],['Iraque','Bagdá','iq'],['Paquistão','Islamabad','pk'],['Bangladesh','Daca','bd'],['Japão','Tóquio','jp'],['Coreia do Sul','Seul','kr'],['Vietnã','Hanói','vn'],['Tailândia','Bangcoc','th'],['Filipinas','Manila','ph'],['Malásia','Kuala Lumpur','my'],['Singapura','Singapura','sg'],['Nova Zelândia','Wellington','nz'],['Chile','Santiago','cl'],['Colômbia','Bogotá','co'],['Peru','Lima','pe'],['Venezuela','Caracas','ve'],['Cuba','Havana','cu'],['Marrocos','Rabat','ma'],['Argélia','Argel','dz'],['Sudão','Cartum','sd'],['Etiópia','Adis Abeba','et'],['Quênia','Nairóbi','ke'],['Tanzânia','Dodoma','tz'],['Gana','Acra','gh'],['Angola','Luanda','ao'],['Moçambique','Maputo','mz'],['Camarões','Iaundé','cm'],['República Democrática do Congo','Kinshasa','cd'],['Cazaquistão','Astana','kz'],['Uzbequistão','Tashkent','uz'],['Afeganistão','Cabul','af'],['Mianmar','Naypyidaw','mm'],['Nepal','Catmandu','np'],['Sri Lanka','Sri Jayawardenepura Kotte','lk'],['Coreia do Norte','Pyongyang','kp']];
 // Educational selection: familiar flags, ties to Brazil and continental variety.
-const selectedCodes=new Set('br us ca ar mx cl co pe cu de fr gb it es pt nl be ch at ie gr se no fi dk pl ua ru cn in jp kr id th vn ph sg sa ae il tr pk za eg ma ng ke ao au nz'.split(' '));
+// 40 familiar countries, avoiding the more difficult African set for this age.
+const selectedCodes=new Set('br us ca ar mx cl co pe cu de fr gb it es pt nl be ch at ie gr se no fi dk pl ua ru cn in jp kr id th vn ph sg sa au nz'.split(' '));
 const countryPool=countriesAll.filter(c=>selectedCodes.has(c[2]));
 const countryPrepositions=Object.fromEntries([
   ['do','br ca mx eg gb ir iq pk bd jp vn cl pe sd ke kz uz af np lk'],
@@ -14,7 +15,7 @@ function countryWithPreposition(country=current()){
   return `${countryPrepositions[country[2]]||'de'} ${country[0]}`;
 }
 let clarificationAttempts=0;
-let countries=[], index=0, stage='country', score=0, mode='voice', capitals=false;
+let countries=[], index=0, stage='country', score=0, mode='voice', capitals=false, countryCorrect=false;
 let phase='setup', recognition=null, utterance=null, revision=0;
 let timer=null, answerTimer=null, retryTimer=null, readyTimer=null;
 let speechTimer=null;
@@ -243,6 +244,7 @@ function answer(value){
   const correct=current()[stage==='country'?0:1];
   traceVoice('avaliando-resposta',intent);
   const right=intent==='correct', helping=intent==='help';
+  if(stage==='country')countryCorrect=right;
   if(right)score++;
   const explanation=stage==='country'?`Essa é a bandeira ${countryWithPreposition()}.`:`A capital ${countryWithPreposition()} é ${correct}.`;
   cue(right?'correct':helping?'speaking':'incorrect',right?'🌟':'💛',right?'Parabéns! Você acertou!':helping?'Vamos aprender juntos!':'Não foi dessa vez!');
@@ -257,9 +259,9 @@ function answer(value){
 }
 function next(){
   clarificationAttempts=0;
-  if(stage==='country'&&capitals)stage='capital';
+  if(stage==='country'&&capitals&&countryCorrect)stage='capital';
   else{
-    stage='country';index++;
+    stage='country';countryCorrect=false;index++;
     if(index===countries.length){
       countries=shuffle(countryPool);index=0;
     }
@@ -294,7 +296,7 @@ function start(){
   countries=shuffle(countryPool);
   // A new game should visibly start with a different flag too.
   if(countries[0][2]===previous)[countries[0],countries[1]]=[countries[1],countries[0]];
-  index=0;stage='country';score=0;failures=0;clarificationAttempts=0;
+  index=0;stage='country';countryCorrect=false;score=0;failures=0;clarificationAttempts=0;
   capitals=$('capitals').checked;
   phase='starting';
   $('start').disabled=true;
