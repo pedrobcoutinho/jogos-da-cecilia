@@ -20,6 +20,7 @@ let phase='setup', recognition=null, utterance=null, revision=0;
 let timer=null, answerTimer=null, retryTimer=null, readyTimer=null;
 let speechTimer=null;
 let listeningTimer=null, listeningRetries=0;
+let closingVoice=null, voiceStopTimer=null, afterVoiceStop=[];
 let heard='', failures=0;
 let speechActive=false, transcriptFinal=false, lastVoiceUpdate=0;
 function scheduleAnswer(delay){
@@ -116,10 +117,24 @@ function stopVoice(){
   if(recognition){
     const old=recognition;
     recognition=null;
-    old.onstart=old.onresult=old.onerror=old.onend=null;
+    old.onstart=old.onresult=old.onerror=null;
     old.onaudiostart=old.onaudioend=old.onsoundstart=old.onsoundend=old.onspeechstart=old.onspeechend=old.onnomatch=null;
-    old.abort();
+    closingVoice=old;
+    const released=()=>{
+      if(closingVoice!==old)return;
+      clearTimeout(voiceStopTimer);old.onend=null;closingVoice=null;
+      const callbacks=afterVoiceStop;afterVoiceStop=[];
+      callbacks.forEach(callback=>callback());
+    };
+    old.onend=released;
+    // abort() is asynchronous. Do not start narration or a new microphone
+    // session while the previous session is still releasing the audio device.
+    voiceStopTimer=setTimeout(()=>{traceVoice('fim-do-microfone-sem-evento');released()},1500);
+    try{old.abort()}catch{released()}
   }
+}
+function whenVoiceStopped(callback){
+  if(closingVoice)afterVoiceStop.push(callback);else callback();
 }
 function setup(message=''){
   clearRound();
@@ -166,8 +181,11 @@ function speak(text,done){
   speech.onstart=()=>{started=true};
   speech.onend=finish;
   speech.onerror=finish;
-  speechTimer=setTimeout(watch,1000);
-  try{if(window.CeciliaAudio)window.CeciliaAudio.play(speech);else window.speechSynthesis.speak(speech)}catch{finish()}
+  whenVoiceStopped(()=>{
+    if(version!==revision||utterance!==speech)return;
+    speechTimer=setTimeout(watch,1000);
+    try{if(window.CeciliaAudio)window.CeciliaAudio.play(speech);else window.speechSynthesis.speak(speech)}catch{finish()}
+  });
 }
 function current(){return countries[index]}
 function render(){
@@ -219,7 +237,7 @@ function interpretAnswer(value){
   const normalized=clean(words.replace(/^(eu acho que e|acho que e|a resposta e|o pais e|a capital e|e o pais|e|o|a)\s+/,''));
   const correct=current()[stage==='country'?0:1];
   const targets=answerNames(correct);
-  if(targets.includes(normalized))return 'correct';
+  if(targets.some(target=>normalized===target||normalized===target.repeat(2)||normalized===target.repeat(3)))return 'correct';
   if(/\b(nao entendi|nao ouvi|repete|repetir|repita|fala de novo|fale de novo|pode repetir)\b/.test(words))return 'repeat';
   if(/\b(nao sei|nao conheco|nao lembro|nao me lembro|esqueci|me ajuda|ajuda|qual e a resposta|me conta|desisto|nao faco ideia|sei la)\b/.test(words))return 'help';
   // A clearly named different country/capital must not become a fuzzy match.
@@ -308,17 +326,41 @@ function start(){
 }
 function connectVoice(initial=false){
   if(recognition||mode!=='voice'||!['starting','waiting'].includes(phase))return;
+  if(closingVoice){
+    const version=revision;
+    whenVoiceStopped(()=>{if(version===revision)connectVoice(initial)});
+    return;
+  }
   const r=new Recognition();
   recognition=r;
-  r.lang='pt-BR';r.continuous=true;r.interimResults=true;
+  r.lang='pt-BR';r.continuous=false;r.interimResults=true;
   const active=()=>recognition===r;
-  let startedAt=Date.now();
-  r.onaudiostart=()=>{if(active())traceVoice('captura-audio-iniciada')};
-  r.onaudioend=()=>{if(active())traceVoice('captura-audio-encerrada')};
-  r.onsoundstart=()=>{if(active())traceVoice('som-detectado')};
+  let audioEnded=false;
+  const audioReady=()=>{
+    if(!active()||voiceReady||audioEnded)return;
+    clearTimeout(readyTimer);
+    voiceReady=true;
+    traceVoice('microfone-pronto');
+    if(initial&&phase==='starting'){beginRound();return}
+    if(phase==='waiting'){
+      waitingCue();watchListening();
+      $('feedback').textContent='🎙️ Sua vez! Pode falar com calma.';
+    }
+  };
+  r.onaudiostart=()=>{if(active()){traceVoice('captura-audio-iniciada');audioReady()}};
+  r.onaudioend=()=>{
+    if(!active())return;
+    audioEnded=true;voiceReady=false;traceVoice('captura-audio-encerrada');
+    if(phase==='waiting'){
+      cue('speaking','⏳','Entendendo sua resposta…');
+      if(!heard)watchListening(1500);
+    }
+  };
+  r.onsoundstart=()=>{if(active()){traceVoice('som-detectado');audioReady()}};
   r.onsoundend=()=>{if(active())traceVoice('som-encerrado')};
   r.onspeechstart=()=>{
     if(!active())return;
+    audioReady();
     traceVoice('fala-detectada');
     if(phase==='waiting'){
       speechActive=true;transcriptFinal=false;lastVoiceUpdate=Date.now();
@@ -342,23 +384,23 @@ function connectVoice(initial=false){
   };
   r.onstart=()=>{
     if(!active())return;
-    clearTimeout(readyTimer);
-    voiceReady=true;
-    traceVoice('microfone-pronto');
-    if(phase==='waiting'){
-      waitingCue();watchListening();
-      $('feedback').textContent='🎙️ Sua vez! Pode falar com calma.';
-    }
-    startedAt=Date.now();
-    if(initial)beginRound();
+    traceVoice('servico-de-voz-iniciado');
+    // onstart alone does not confirm microphone capture. Wait for audiostart,
+    // sound/speech detection or an actual result before displaying green.
   };
   r.onresult=e=>{
     if(!active())return;
     failures=0;
     traceVoice('resultado',`quantidade=${e.results.length}; alterado=${e.resultIndex??0}`);
     if(phase!=='waiting')return;
+    audioReady();
     // Every question has a fresh recognition session, with no narrator history.
-    const transcript=Array.from(e.results).map(x=>x[0].transcript).join(' ').trim();
+    const parts=[];
+    for(const result of Array.from(e.results)){
+      const text=result[0]?.transcript?.trim();
+      if(text&&clean(text)!==clean(parts[parts.length-1]||''))parts.push(text);
+    }
+    const transcript=parts.join(' ');
     const finalResult=e.results.length>0&&Array.from(e.results).every(x=>x.isFinal===true);
     if(!transcript)return;
     if(clean(transcript)===clean(heard)&&finalResult===transcriptFinal)return;
@@ -368,7 +410,8 @@ function connectVoice(initial=false){
     clearTimeout(listeningTimer);
     traceVoice('resposta-capturada');
     $('feedback').textContent='Ouvi você! Só um instante…';
-    cue('listening','🎙️','Estou ouvindo!');
+    if(transcriptFinal||audioEnded)cue('speaking','⏳','Entendendo sua resposta…');
+    else cue('listening','🎙️','Estou ouvindo!');
     // A final transcript can arrive with identical text to its interim result.
     // Process that event too, so it accelerates evaluation.
     scheduleAnswer(transcriptFinal?250:1800);
@@ -376,7 +419,12 @@ function connectVoice(initial=false){
   r.onerror=e=>{
     if(!active())return;
     traceVoice('erro-microfone',e.error);
-    if(e.error==='no-speech')return;
+    if(['no-speech','network','aborted'].includes(e.error)&&phase==='waiting'){
+      voiceReady=false;
+      cue('speaking','⏳','Só um instante…');
+      if(heard){speechActive=false;scheduleAnswer(250)}else watchListening(500);
+      return;
+    }
     const message=['not-allowed','service-not-allowed'].includes(e.error)
       ?'O microfone não foi autorizado. Um adulto precisa permitir o microfone nas configurações deste site no Chrome antes de começar.'
       :e.error==='audio-capture'?'Não encontrei o microfone. Confira se está conectado antes de começar.'
@@ -390,14 +438,13 @@ function connectVoice(initial=false){
     clearTimeout(readyTimer);
     voiceReady=false;
     speechActive=false;
-    if(phase==='waiting'&&heard){scheduleAnswer(250);return}
+    if(phase==='waiting'&&heard){cue('speaking','⏳','Entendendo sua resposta…');scheduleAnswer(250);return}
     if(phase==='waiting')waitingCue();
     if(phase==='starting'){setup('Não consegui preparar a voz. Confira o microfone e tente começar novamente.');return}
     if(['setup','paused'].includes(phase))return;
-    failures=Date.now()-startedAt<3000?failures+1:0;
-    if(failures>=3){setup('A voz não ficou disponível. Confira o microfone e a internet antes de tentar novamente.');return}
-    // Browsers can end a session on silence; do not restart it every turn.
-    retryTimer=setTimeout(()=>connectVoice(),1000);
+    // Count silent endings against the same question's recovery budget too.
+    // Restarting the watchdog on every onstart used to allow endless listening.
+    if(phase==='waiting')watchListening(500);
   };
   readyTimer=setTimeout(()=>{
     if(active())setup('A preparação da voz demorou. Confira a permissão do microfone e tente novamente.');
@@ -412,7 +459,9 @@ function watchListening(delay=20000){
     if(version!==revision||phase!=='waiting'||heard)return;
     traceVoice('sem-resposta-do-reconhecimento');
     if(listeningRetries>=1){
-      setup('Não recebi uma resposta do serviço de voz. Confira se o Chrome está usando o microfone correto e copie o registro em Ajuda para o adulto para investigar. Nenhuma resposta foi marcada como errada.');
+      stopVoice();mode='buttons';phase='ready';render();
+      traceVoice('continuando-por-toque');
+      ask('Não consegui ouvir agora. Vamos continuar tocando nos botões. ');
       return;
     }
     listeningRetries++;
